@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "preview-core"
+version = "0.2.5"
+description = "Deterministic preview composition for the 3ddd.ru marketplace guide"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "Pillow>=10.0", "PyYAML>=6.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+preview = "preview_core.cli:main"
+
+[tool.setuptools]
+packages = ["preview_core"]
+
+# spec.yaml is shipped inside the package: an installed wheel has no
+# repository around it, and `--spec` must stay optional.
+[tool.setuptools.package-data]
+preview_core = ["spec.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
