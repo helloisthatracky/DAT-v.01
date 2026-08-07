@@ -1,0 +1,109 @@
+# ============================================================================
+#  PreviewKit — spec.yaml
+#  Single source of truth for all guide rules. Code contains no magic numbers.
+#
+#  Values marked [?] are provisional and MUST be confirmed against the
+#  official PSD template before Э0 is signed off (see README, "Calibration").
+#  Measured values were reverse-engineered from 121.png (template screenshot,
+#  1000x1000 canvas area inside a 1px viewer border).
+# ============================================================================
+
+version: "0.2.0-draft"
+
+canvas:
+  width: 1500
+  height: 1500
+  background: [255, 255, 255]      # forced pure white
+
+guides:
+  # Inner frame the model must touch on at least one axis.
+  # Measured on 121.png: left/top guide at 26px, right/bottom at 973.5px
+  # of a 1000px canvas  ->  inset = 2.60% .  [?] confirm against PSD.
+  inset_ratio: 0.026
+  touch_tolerance_ratio: 0.01      # +/-1% of canvas, per tech spec 3.1
+  max_overflow_px: 2               # slack for Lanczos ringing only, not a budget
+
+# Forbidden regions, as fractions of canvas (x0, y0, x1, y1).
+# 3ddd draws its own watermarks in TL and BR - we only keep them clear.
+# Reproduce with: python tools/calibrate_guides.py assets/121.png
+zones:
+  TL:  [0.010, 0.010, 0.155, 0.275]   # search-by-image / 3D buttons (measured)
+  BR:  [0.660, 0.845, 0.995, 0.995]   # 3ddd watermark strip (measured)
+  BL:  [0.005, 0.845, 0.340, 0.995]   # reserved for the brand logo, mirror of BR [?]
+
+classify:
+  # r = bbox_w / bbox_h
+  h_threshold: 1.25                # r >= 1.25  -> H
+  v_threshold: 0.80                # r <= 0.80  -> V ; otherwise S
+
+mask:
+  alpha_threshold: 0.00784         # 2/255 - kills JPEG ringing on white
+  median_size: 3
+  bbox_coverage_eps: 0.0008        # drop rows/cols with < 0.08% coverage
+
+shadow:
+  enabled: true
+  max_saturation: 0.10             # near-neutral
+  min_luminance: 0.62              # light grey, not the object itself
+  max_alpha: 0.45                  # soft
+  below_centroid: true             # only under the object's centre of mass
+  # Shadow is excluded from the fit bbox but stays in the frame.
+
+layout:
+  max_upscale: 2.0                 # per tech spec 5.3
+  resample: lanczos
+  gap_ratio: 0.030                 # gap between two views, fraction of canvas
+  y_anchor: 0.50                   # 0=top, 0.5=centre, 1=bottom
+  two_views_min_fill: 0.34         # if union fills < 34% of guide box -> fall
+                                   # back to 1 view + warning
+
+spheres:
+  enabled: true
+  count: 4
+  diameter_ratio: 0.085            # of canvas width
+  min_diameter_ratio: 0.055
+  gap_ratio: 0.020
+  clearance_ratio: 0.020           # "air" kept around the model
+  search_step_ratio: 0.008
+  priority:                        # candidate strips per model type
+    V: [right_column, left_column, top_strip]
+    H: [between_views, top_strip, right_column]
+    S: [top_strip, right_column, between_views]
+
+overlays:
+  draw_3ddd_logo: false            # [!] 3ddd stamps it server-side (overview.txt)
+  logo_3ddd:
+    corner: BR
+    width_ratio: 0.230
+    margin_ratio: 0.030
+  brand_logo:
+    enabled: true
+    corner: BL
+    width_ratio: 0.190
+    margin_ratio: 0.030
+
+closeup:
+  n: 2
+  min_free_area_ratio: 0.18        # closeups allowed only if canvas is roomy [?]
+  window_ratio: 0.42               # crop window, fraction of the source's short side
+  step_ratio: 0.06
+  nms_iou: 0.25
+  bleed: true                      # crop fills the canvas edge to edge
+  entropy_weight: 0.4
+  gradient_weight: 0.6
+
+export:
+  format: jpeg
+  quality: 92
+  subsampling: 0                   # 4:4:4
+  min_quality: 78
+  max_mb: 5.0
+  icc_srgb: true
+  strip_metadata: true
+  name_template: "{model_id}_{index:02d}_{role}.jpg"
+
+validate:
+  strict: true
+  min_canvas_side: 900             # floor for third-party previews [?] confirm
+  bg_white_tolerance: 2            # max deviation from 255 in background
+  bg_sample_border_ratio: 0.01
