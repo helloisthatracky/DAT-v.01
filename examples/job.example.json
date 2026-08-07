@@ -1,0 +1,16 @@
+{
+  "job_id": "8b1f0e2c-0000-4000-8000-000000000001",
+  "model_id": "12345",
+  "views": [
+    { "url": "../assets/model.png", "angle": "three_quarter" }
+  ],
+  "spheres": [
+    "../assets/watermark.png",
+    "../assets/watermark.png",
+    "../assets/watermark.png",
+    "../assets/watermark.png"
+  ],
+  "brand_logo": null,
+  "outputs": ["main", "secondary", "closeup"],
+  "overrides": { "sphere_count": 4, "max_views": 2 }
+}
